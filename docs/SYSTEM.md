@@ -1,349 +1,475 @@
-# Memento — System Definition
+# Memento — System Architecture
 
 ## 1. Architecture
 
-Initial stack:
+Memento V1 is a mobile-first Progressive Web App.
+
+Frontend:
 
 - HTML
 - CSS
-- JavaScript
+- Vanilla JavaScript
+
+Backend/platform:
+
 - Supabase
-- PostgreSQL
 - Supabase Auth
-- PWA
+- PostgreSQL
+- Row Level Security (RLS)
 
-The frontend should remain lightweight and modular.
+PWA:
 
-Avoid introducing React/Next.js unless the complexity of the product genuinely requires it.
+- Web App Manifest
+- Service Worker
+- Web Push in a later implementation stage
 
----
-
-## 2. High-Level Flow
-
-User
-↓
-Memento UI
-↓
-Application Logic
-↓
-Supabase Client
-↓
-Supabase Auth / PostgreSQL
-↓
-Row Level Security
-
-The frontend is never considered trusted.
-
-Database security must independently enforce authorization.
+No frontend framework is required for V1.
 
 ---
 
-## 3. Core Data Objects
+## 2. Core Architecture Principle
 
-Initial conceptual objects:
+The system follows:
 
-User
-Person
-Relationship
-Transaction
-Invitation
-Audit Log
+Frontend
+→ Supabase
+→ PostgreSQL
 
-Possible future objects:
+The frontend is not trusted.
 
-Settlement
-Notification
-Business
-Invoice
-Group
+The database and authorization rules determine what data a user is allowed to access.
 
-Do not create future tables until they are required.
+The UI displays the state of the system.
+
+The UI must never be the authority for financial data.
+
+---
+
+## 3. Authentication
+
+Memento V1 uses:
+
+Phone number + password
+
+Supabase Auth manages authentication.
+
+There is no OTP authentication in V1.
+
+There is no Twilio dependency.
+
+There is no email authentication in V1.
+
+Authentication provides a unique:
+
+auth.uid()
+
+for each user.
+
+This ID is the foundation for authorization.
 
 ---
 
 ## 4. User Identity
 
-Authentication identity and display identity are separate.
+A user's identity has two layers:
 
-Authentication:
+### Authentication identity
 
-- Supabase Auth
-- Phone number / OTP
+Managed by Supabase Auth.
 
-Application identity:
+Contains the authenticated user's unique UUID and authentication credentials.
 
-- Internal user ID
-- Display name
-- Other profile information
+### Memento profile
 
-Phone number should not be treated as the permanent internal identity.
-
----
-
-## 5. Relationship
-
-A relationship connects two people.
+Stored in the application's database.
 
 Conceptually:
 
-User A
-↕
-Relationship
-↕
-User B
+profiles
 
-Before User B registers:
+- id
+- display_name
+- created_at
 
-User A
-↕
-Relationship
-↕
-Unregistered Person
+The profile ID corresponds to auth.users.id.
 
-After User B accepts an invitation:
+The display name is not guaranteed to be unique.
 
-Existing relationship
-↓
-Linked to User B
-↓
-Shared relationship
+Example:
 
-The existing transaction history must remain intact.
+User A:
+display_name = Aman
+
+User B:
+display_name = Aman
+
+They remain different users because their authentication IDs are different.
 
 ---
 
-## 6. Transaction Model
+## 5. Phone Number
 
-Every transaction receives a unique ID.
+The phone number is used as the authentication identifier in V1.
 
-A transaction belongs to exactly one relationship.
+The application should not expose a user's phone number to other users by default.
+
+Phone number storage and visibility must follow Supabase Auth and application privacy rules.
+
+---
+
+## 6. Session Management
+
+Supabase manages authenticated sessions.
+
+On application startup:
+
+1. Check for an existing session.
+2. If no session exists, show authentication.
+3. If a session exists, obtain the authenticated user.
+4. Load the user's Memento profile.
+5. Show the authenticated application.
+
+Authentication state changes should be handled through Supabase's authentication state listener.
+
+Users should remain logged in across normal page refreshes and browser restarts according to Supabase session behavior.
+
+---
+
+## 7. Database Objects
+
+The system will eventually contain objects such as:
+
+### profiles
+
+Stores Memento user profile information.
+
+### people / relationships
+
+Represents a connection or ledger between users.
+
+### transactions
+
+Stores individual financial events.
+
+### settlements
+
+Stores settlement events separately from original transactions.
+
+### invitations
+
+Stores invitation tokens and their lifecycle.
+
+### notifications
+
+Stores in-app notification records.
+
+### audit records
+
+Stores changes to financial records where required.
+
+The exact schema should be introduced incrementally as each feature is implemented.
+
+Do not create unnecessary tables before they are required.
+
+---
+
+## 8. Relationships
+
+The core business relationship is:
+
+User A ↔ User B
+
+Transactions belong to a relationship.
+
+A relationship may initially contain an unregistered person.
+
+When the invited person creates/uses a Memento account and accepts the invitation, the relationship can be associated with the authenticated user.
+
+The system must prevent unauthorized users from accessing a relationship.
+
+---
+
+## 9. Transactions
+
+A transaction represents:
+
+Person A paid money for Person B.
 
 Conceptually:
 
-Transaction
+transaction
 
 - id
 - relationship_id
-- created_by
-- payer
-- beneficiary
+- payer_id/person reference
+- beneficiary_id/person reference
 - amount
-- note
-- payment_method
-- occurred_at
+- description
 - created_at
-- updated_at
+- created_by
 
-The exact database types and constraints will be finalized before implementation.
+Transaction IDs must be unique.
 
----
+Transactions represent historical events.
 
-## 7. Balance Calculation
-
-Balance is derived from transactions.
-
-Never allow the frontend to simply set:
-
-balance = ₹500
-
-Instead:
-
-transactions
-↓
-calculation
-↓
-current balance
-
-Example:
-
-Aman → Jai ₹500
-Jai → Aman ₹200
-Aman → Jai ₹100
-
-Net:
-
-Jai owes Aman ₹400.
-
-The exact mathematical representation will be finalized before implementation.
+They must not be used as mutable balance records.
 
 ---
 
-## 8. Settlement
+## 10. Balance Calculation
 
-Settlement is another recorded financial event.
+Balance must be derived from transactions and settlements.
 
-It does not:
+Never store a manually editable current balance as the source of truth.
 
-- Delete transactions
-- Modify historical transactions
-- Reset the database balance manually
+Conceptually:
 
-Instead:
+Balance =
+money owed through transactions
+minus
+applicable settlements
 
-Previous transactions
-+
-Settlement
-↓
-New calculated balance
+The exact calculation must be implemented centrally and consistently.
+
+The same transaction history must produce the same balance regardless of frontend device.
+
+---
+
+## 11. Settlements
+
+Settlements are separate records.
+
+A settlement does not delete or overwrite the transactions that caused the balance.
 
 Example:
 
-Balance = Jai owes Aman ₹400
+Transaction:
+Aman paid ₹500 for Jai.
 
 Settlement:
+Jai settled ₹500 with Aman.
 
-Jai pays Aman ₹400
-
-New calculated balance = ₹0
+Both events remain in history.
 
 ---
 
-## 9. Editing
+## 12. Editing and Auditability
 
-Transactions should not be silently overwritten.
+Financial records must not be silently modified.
 
-When an important transaction value changes, the system should preserve an audit record.
+When transaction editing is introduced, the system should preserve:
+
+- transaction ID
+- original value
+- updated value
+- editor
+- edit timestamp
+
+Depending on implementation, this may be stored in an audit table or equivalent immutable history structure.
+
+The system must be able to explain how a displayed balance was produced.
+
+---
+
+## 13. Authorization and RLS
+
+Row Level Security is mandatory.
+
+Every private database table must have appropriate RLS policies.
+
+Authorization must be based on authenticated identity and relationship membership.
 
 Example:
 
-Transaction T123
+Aman:
 
-Original:
-₹500
+Can access:
+- Aman's own profile
+- relationships Aman belongs to
+- transactions belonging to authorized relationships
 
-Edited:
-₹450
+Cannot access:
+- unrelated users' private profiles
+- unrelated relationships
+- unrelated transactions
 
-Audit:
-
-- Transaction: T123
-- Changed by: User A
-- Old value: ₹500
-- New value: ₹450
-- Changed at: timestamp
-
-The exact audit implementation will be designed before coding.
+The frontend must never be responsible for enforcing these boundaries.
 
 ---
 
-## 10. Invitations
+## 14. Invitations
 
-Invitation flow:
+Invitations use unique tokens.
 
-User A
-↓
-Selects Person
-↓
-Generate invitation
-↓
-Person receives link/message
-↓
-Person opens Memento
-↓
-Registers
-↓
-Accepts invitation
-↓
-System identifies intended relationship
-↓
-Existing relationship becomes connected
-↓
-Both users can access the shared ledger
+Conceptually:
 
-Important:
+invitation
 
-The invited user must not accidentally create a duplicate relationship.
+- id
+- relationship_id
+- token
+- created_by
+- status
+- expires_at
+- created_at
 
-The connection process must be idempotent.
+The invitation link contains a token.
+
+The token must not itself grant unrestricted database access.
+
+Opening an invitation and accepting an invitation are separate concepts.
+
+Authorization must be checked when the invitation is accepted.
 
 ---
 
-## 11. Authorization
+## 15. Notification Architecture
 
-Every database operation must respect authorization.
+Memento has two notification layers.
 
-A user may access:
+### In-app notifications
 
-- Their own account
-- Relationships they are part of
-- Transactions belonging to authorized relationships
-- Invitations relevant to them
+Stored in the database.
 
-A user must NOT be able to access another user's private relationships or transactions by changing an ID in a request.
+Examples:
 
-Supabase Row Level Security will enforce this.
+- new transaction
+- transaction edit
+- settlement
+- balance-related event
 
----
+### PWA push notifications
 
-## 12. Offline Behavior
+May notify the user when the PWA is not currently open.
 
-Offline support should not be treated as simple localStorage caching.
+Possible architecture:
 
-Potential model:
+Database event
+→ backend/Edge Function
+→ Web Push service
+→ user's browser/device
 
-Online:
-UI → Supabase → confirmed data
+Push notification delivery is separate from transaction truth.
 
-Offline:
-UI → local pending operation
-↓
-connection restored
-↓
-sync
-↓
-server confirmation
-
-Conflict handling must be explicitly designed before implementing offline writes.
-
-V1 may initially prioritize reliable online behavior over complex offline synchronization.
+Failure to deliver a push notification must never change or invalidate the underlying transaction.
 
 ---
 
-## 13. Source of Truth
+## 16. PWA Architecture
 
-For connected relationships:
+Memento includes:
 
-Supabase database = source of truth.
+manifest.json
+sw.js
 
-Local browser storage = cache / temporary offline state.
+The service worker is responsible for the PWA shell and future push functionality.
 
-The client must not be able to permanently override server data without authorization.
+Initial service worker functionality may include:
 
----
+- app shell caching
+- controlled cache updates
+- basic offline loading of static application resources
 
-## 14. Reliability Principles
+Offline financial writes are not initially supported.
 
-Money-related operations must prioritize:
-
-1. Correctness
-2. Security
-3. Consistency
-4. Auditability
-5. Recoverability
-6. User experience
-
-A visually impressive feature should never be implemented at the cost of financial correctness.
+Supabase remains the source of truth.
 
 ---
 
-## 15. Development Rule
+## 17. Offline Strategy
 
-Do not code a feature until its behavior is defined.
+Offline support is deliberately limited in early versions.
 
-For every important feature:
+The initial PWA may cache static resources so the application shell can load.
 
-Requirement
-↓
-User flow
-↓
-Business rule
-↓
-Data model
-↓
-Security rule
-↓
-Implementation
-↓
-Testing
+Do not treat cached data as authoritative financial state.
 
-AI-generated code must follow the documented system rather than define the system itself.
+If offline transaction creation is introduced later, it must use an explicit pending/synchronization model, likely backed by IndexedDB.
+
+localStorage must not be treated as a financial database.
+
+---
+
+## 18. External Services
+
+V1 should minimize external dependencies.
+
+Required:
+
+- Supabase
+
+Not required:
+
+- Twilio
+- email provider
+- WhatsApp API
+- payment provider
+- UPI API
+
+Native device sharing can be used for invitation links.
+
+Future notification infrastructure may introduce Web Push-related services as necessary.
+
+---
+
+## 19. Frontend Configuration
+
+Public Supabase client configuration may be exposed to the browser as intended by Supabase's client architecture.
+
+Never expose:
+
+- service-role keys
+- database passwords
+- private server secrets
+
+The application deployment/configuration system must keep secrets out of the frontend and out of Git.
+
+---
+
+## 20. Development Strategy
+
+Memento is developed using vertical slices.
+
+For each feature:
+
+1. Define user experience
+2. Define user flow
+3. Define database requirements
+4. Define authorization rules
+5. Implement backend/database
+6. Implement frontend
+7. Test the complete flow
+8. Polish
+
+Frontend and backend should evolve together.
+
+Do not build the entire frontend first and postpone backend/security.
+
+---
+
+## 21. Reliability Principle
+
+The system must prioritize correctness over convenience.
+
+Especially for financial records:
+
+- do not silently mutate history
+- do not manually manipulate balances
+- do not trust client-provided authorization
+- do not rely on hidden UI controls for security
+- do not use local storage as the source of truth
+- do not claim a transaction succeeded unless the backend confirms it
+
+---
+
+## 22. Core System Principle
+
+The database stores what happened.
+
+The business logic derives what is owed.
+
+The frontend displays the result.
+
+The user decides what action to take.
+
+Memento records and remembers the relationship.

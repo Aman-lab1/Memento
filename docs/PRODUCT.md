@@ -2,314 +2,389 @@
 
 ## 1. Product
 
-Memento is a simple, private shared-money ledger for people.
+Memento is a private person-to-person money ledger.
 
-It helps people remember money exchanged between them:
-who paid, who owes, what the payment was for, and whether it has been settled.
+It helps people remember:
 
-### Core idea
+- who paid
+- who owes whom
+- what the payment was for
+- when it happened
+- what has been settled
+- what has been edited
+
+Memento is not:
+
+- a bank
+- a wallet
+- a UPI application
+- a payment processor
+- a traditional expense tracker
+
+The core idea is:
 
 > Memento remembers the money between people.
 
-Memento is not a bank, wallet, UPI app, or traditional expense tracker.
-
-It is a memory and record of financial interactions between people.
-
 ---
 
-## 2. The Problem
+## 2. Core Concept
 
-People frequently pay for each other.
-
-Examples:
-
-- Aman pays ₹500 for dinner.
-- Jai pays ₹200 for a cab.
-- A friend buys movie tickets for everyone.
-- A roommate pays the electricity bill.
-- Someone says "I'll pay you back later."
-
-The problem is rarely the payment itself.
-
-The problem is remembering what happened afterward.
-
-People forget:
-
-- who paid
-- how much they paid
-- what it was for
-- whether they already repaid someone
-- whether a previous payment was included in the calculation
-
-This creates unnecessary mental effort and awkward conversations.
-
-Memento should remove that mental burden.
-
----
-
-## 3. Target Users
-
-Initially:
-
-- Friends
-- Classmates
-- Roommates
-- Couples
-- Small groups of people who frequently pay for each other
-
-Later:
-
-- Small businesses
-- Customers
-- Vendors
-- Informal credit/outstanding tracking
-
-V1 should focus on person-to-person relationships.
-
----
-
-## 4. Product Philosophy
-
-Memento should feel:
-
-- Simple
-- Calm
-- Human
-- Cozy
-- Trustworthy
-- Private
-- Lightweight
-- Unintrusive
-
-The user should not feel like they are using accounting software.
-
-The interface should make money tracking feel as simple as remembering a conversation.
-
----
-
-## 5. Core Concept: Relationship
-
-The fundamental object in Memento is not an expense.
-
-It is a relationship between two people.
+The primary object in Memento is a relationship between two people.
 
 Example:
 
 Aman ↔ Jai
 
-Inside that relationship exists a history of financial interactions.
+Transactions belong to this relationship.
 
-Example:
+If:
 
-Aman paid ₹500 for Jai
-Jai paid ₹200 for Aman
-Aman paid ₹100 for Jai
+- Aman pays ₹500 for Jai
+- Jai pays ₹200 for Aman
+- Aman pays ₹100 for Jai
 
-The current balance is calculated from this history.
-
----
-
-## 6. Balance
-
-Memento must calculate balances from transaction history.
-
-It should NOT rely on a manually editable balance.
-
-Example:
-
-Aman pays for Jai: +₹500
-
-Jai pays for Aman: -₹200
-
-Aman pays for Jai: +₹100
-
-Current result:
+Then the derived balance is:
 
 Jai owes Aman ₹400.
 
-The transaction history remains the source of truth.
+The balance must always be derived from transaction history.
+
+Users must not directly edit a balance.
 
 ---
 
-## 7. Transactions
+## 3. Users
 
-A transaction records a real financial interaction.
+Memento is initially designed for individuals such as:
 
-A transaction should contain, at minimum:
+- friends
+- classmates
+- roommates
+- couples
+- colleagues
+- small groups of people who regularly share expenses
 
-- Unique transaction ID
-- Relationship ID
-- Creator
-- Payer
-- Person it was for
-- Amount
-- Note
-- Payment method
-- Date/time
-- Creation timestamp
-
-Additional fields can be introduced later.
+The initial product is India-focused.
 
 ---
 
-## 8. Settlement
+## 4. Account and Authentication
 
-Settlement does not erase history.
+Memento V1 uses:
+
+- phone number
+- password
+
+for account authentication.
+
+There is no OTP requirement in V1.
+
+There is no email requirement in V1.
+
+There is no Twilio dependency in V1.
+
+The phone number acts as the user's login identifier.
+
+The user's display name is separate from authentication.
 
 Example:
 
-Jai owes Aman ₹400.
+Phone number:
++91 XXXXX XXXXX
 
-Jai pays Aman ₹400.
+Display name:
+Aman
 
-Memento records this as a settlement transaction.
+Multiple users may have the same display name.
 
-The previous ₹500, ₹200 and ₹100 transactions remain visible.
+Authentication identity is provided by Supabase Auth.
 
-The current balance becomes ₹0.
-
-History should always remain understandable.
+Each authenticated user receives a unique Supabase user ID.
 
 ---
 
-## 9. People vs Connected Users
+## 5. Profile
 
-A user can add someone who does not have a Memento account.
+Each Memento user has a profile containing information such as:
+
+- display name
+- phone number through the authenticated identity
+- creation timestamp
+
+The display name is what other connected users see.
+
+The phone number is used for authentication and should not automatically be exposed to other users.
+
+---
+
+## 6. Adding People
+
+A user can create a person/relationship in Memento.
+
+A person does not necessarily need to already have a Memento account.
 
 Example:
 
 Aman adds:
 
 Jai
-+91 XXXXX XXXXX
 
-Aman can immediately record transactions with Jai.
-
-Jai does not need an account for this.
-
-Later, Aman can invite Jai.
-
-If Jai registers and accepts the invitation:
-
-Aman and Jai become connected.
-
-Their existing relationship should be preserved and become a shared relationship.
-
-Jai should NOT need to manually add Aman again.
+Aman can begin maintaining the relationship ledger.
 
 ---
 
-## 10. Connected Relationships
+## 7. Invitations
 
-Once two users are connected:
+Memento V1 does not depend on SMS or email invitations.
 
-Both users can:
-
-- View the shared transaction history
-- View the current balance
-- Add transactions
-- Add settlements
-- Receive relevant updates
-- Share the relationship summary
-
-Both users should see the same underlying financial history.
-
-The database should remain the source of truth.
-
----
-
-## 11. Trust
-
-Money-related data must never change silently.
-
-If a transaction is edited:
+Instead, Memento generates a unique invitation link.
 
 Example:
 
-₹500 → ₹450
+memento.app/invite/<unique-token>
 
-Memento should preserve:
+The user can share the link using the device's native share functionality.
 
-- Original value
-- New value
-- Who changed it
-- When it was changed
-- Transaction ID
+Possible destinations include:
 
-The other person may also be notified.
+- WhatsApp
+- Messenger
+- Telegram
+- SMS
+- Copy link
+- other supported sharing applications
 
-The exact notification mechanism can be decided later.
-
----
-
-## 12. Privacy
-
-Financial relationships are private.
-
-A user should only be able to access data they are authorized to access.
-
-Security must not depend on hiding UI elements.
-
-Database-level authorization must enforce access.
+Memento does not need to control the external messaging application.
 
 ---
 
-## 13. V1
+## 8. Connecting Users
 
-V1 should include:
+If the invited person already has a Memento account, they can open the invitation and accept it.
 
-- Account creation
-- Phone authentication
-- User identity
-- Add person
-- Person/relationship list
-- Add transaction
-- Transaction history
-- Automatic balance calculation
-- Settlement
-- Invite
-- Accept connection
-- Shared relationship
-- Basic sharing
-- PWA installation
-- Supabase backend
-- Database security
+If they do not have an account, they can create one and then accept the invitation.
+
+Once accepted:
+
+Aman ↔ Jai
+
+becomes a connected Memento relationship.
+
+The existing ledger can then become shared according to the authorization rules defined by the system.
+
+The invited user should not need to manually search for or recreate the relationship.
 
 ---
 
-## 14. Not V1
+## 9. Transactions
 
-Do not build these unless they become necessary:
+A transaction records money paid by one person for another person.
 
-- Direct UPI payments
-- Banking integration
-- Automated WhatsApp messaging
-- Business accounts
-- Invoices
-- Groups
-- Advanced analytics
-- Complex categories
+Example:
+
+Aman paid ₹500 for Jai.
+
+The transaction records:
+
+- amount
+- payer
+- beneficiary/owed-by person
+- description/reason
+- timestamp
+- unique transaction ID
+- relationship
+
+Transactions are historical records.
+
+They should not be silently deleted or rewritten.
+
+---
+
+## 10. Balance
+
+The balance is calculated from transaction history.
+
+Example:
+
+Aman pays ₹500 for Jai.
+
+Balance:
+
+Jai owes Aman ₹500.
+
+If Jai later pays ₹200 for Aman:
+
+Balance:
+
+Jai owes Aman ₹300.
+
+The balance is derived.
+
+There is no manually editable "balance" field.
+
+---
+
+## 11. Settlement
+
+A settlement is a separate recorded event.
+
+Example:
+
+Jai pays Aman ₹300.
+
+Memento records the settlement.
+
+The original transactions remain in the history.
+
+Settlement does not delete transactions.
+
+This preserves the history of what happened.
+
+---
+
+## 12. Editing
+
+Transactions may eventually be editable.
+
+Edits must be auditable.
+
+An edit should preserve:
+
+- original values
+- new values
+- editor
+- timestamp
+- transaction ID
+
+Memento must never silently change financial history.
+
+---
+
+## 13. Notifications
+
+Memento will eventually have its own notification system.
+
+Examples:
+
+- Aman added a transaction
+- Jai added a transaction
+- Aman edited a transaction
+- Jai edited a transaction
+- a transaction was settled
+- the relationship balance changed
+
+Notifications should exist inside Memento.
+
+The PWA may also provide push notifications when the application is closed, subject to browser/OS support and user permission.
+
+Twilio/SMS is not required for these notifications.
+
+---
+
+## 14. Privacy
+
+Financial information is private by default.
+
+A user must not be able to access another user's transactions simply by manipulating frontend requests or IDs.
+
+Authorization must be enforced at the database level.
+
+Supabase Row Level Security (RLS) is a core part of the security model.
+
+The frontend is never considered trusted.
+
+---
+
+## 15. PWA
+
+Memento is a Progressive Web App.
+
+It should be:
+
+- mobile-first
+- installable
+- responsive
+- usable on desktop browsers
+- capable of receiving web push notifications in supported environments
+
+The service worker provides the PWA foundation.
+
+Offline transaction creation and synchronization are not part of the initial implementation.
+
+Supabase remains the source of truth.
+
+---
+
+## 16. V1 Priorities
+
+V1 should focus on:
+
+1. Account creation and login
+2. Session persistence
+3. User profile
+4. PWA foundation
+5. Adding people
+6. Invitation links
+7. Connected relationships
+8. Adding transactions
+9. Transaction history
+10. Derived balances
+11. Settlements
+12. Privacy and RLS
+13. In-app notifications
+14. PWA push notifications
+
+---
+
+## 17. Not V1
+
+Do not build initially:
+
+- Twilio SMS
+- OTP authentication
+- email authentication
+- email invitations
+- WhatsApp API
+- UPI payments
+- payment processing
+- bank integration
+- business accounts
+- invoices
+- advanced analytics
+- complex offline synchronization
 - AI features
-- Subscription system
 
-These can be considered later.
+These may be considered later.
 
 ---
 
-## 15. Success Criteria
+## 18. Product Philosophy
 
-Memento succeeds if a user can answer these questions immediately:
+Memento should feel:
 
-> Who owes me money?
+- simple
+- calm
+- trustworthy
+- human
+- private
+- lightweight
+- reliable
 
-> Whom do I owe?
+It should not feel like:
 
-> Why?
+- a banking application
+- an accounting application
+- a corporate finance dashboard
+- a social network
 
-> How much?
+The interface should make recording and understanding money between people feel effortless.
 
-> What happened previously?
+---
 
-> Is everything settled?
+## 19. Core Principle
 
-The product should make those answers obvious without making the user think about accounting.
+Memento does not move money.
+
+Memento remembers money.
+
+The application records what happened and derives what is currently owed.
