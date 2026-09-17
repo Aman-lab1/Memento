@@ -1,0 +1,10 @@
+{
+  "name": "Memento",
+  "short_name": "Memento",
+  "description": "Memento remembers the money between people.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": []
+}

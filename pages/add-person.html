@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Memento — Add Person</title>
+  <link rel="stylesheet" href="../src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="icon-button" href="../index.html" aria-label="Back">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </a>
+      <span class="topbar__title">Add Person</span>
+      <span style="width:40px" aria-hidden="true"></span>
+    </header>
+
+    <main class="main">
+      <div class="greeting">
+        <h1 class="greeting__title">Who do you want to remember money with?</h1>
+      </div>
+
+      <form class="form" data-add-person-form>
+        <div class="field">
+          <label class="field__label" for="person-name">Name</label>
+          <input
+            class="field__input"
+            id="person-name"
+            name="name"
+            type="text"
+            placeholder="Enter their name"
+            autocomplete="off"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="person-phone">Phone number</label>
+          <input
+            class="field__input"
+            id="person-phone"
+            name="phone"
+            type="tel"
+            placeholder="Enter their phone number"
+            autocomplete="off"
+            required
+          />
+          <span class="field__hint">Used to send them an invite later.</span>
+        </div>
+
+        <button class="btn btn--primary" type="submit">Add person</button>
+
+        <p class="form__footnote">
+          This adds them to Memento on this device only — invitations aren't sent yet.
+        </p>
+      </form>
+    </main>
+  </div>
+
+  <script src="../src/app.js"></script>
+</body>
+</html>

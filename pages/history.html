@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Memento — History</title>
+  <link rel="stylesheet" href="../src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="icon-button" href="../index.html" aria-label="Back">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </a>
+      <span class="topbar__title">History</span>
+      <span style="width:40px" aria-hidden="true"></span>
+    </header>
+
+    <main class="main">
+      <section class="empty-state" style="margin-top: var(--space-5);" data-history-empty>
+        <div class="empty-state__glyph">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3.5 2" />
+          </svg>
+        </div>
+        <h2 class="empty-state__title">Nothing to remember yet</h2>
+        <p class="empty-state__body">
+          Your shared moments with people will show up here once they happen.
+        </p>
+      </section>
+
+      <div class="stack" data-history-list hidden></div>
+    </main>
+  </div>
+
+  <script src="../src/app.js"></script>
+</body>
+</html>

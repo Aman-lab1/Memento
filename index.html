@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Memento</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <span class="topbar__title">Memento</span>
+      <a class="icon-button" href="pages/history.html" aria-label="History">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3.5 2" />
+        </svg>
+      </a>
+    </header>
+
+    <main class="main">
+      <div class="greeting">
+        <p class="greeting__eyebrow">Good evening</p>
+        <h1 class="greeting__title">Welcome to Memento</h1>
+      </div>
+
+      <p class="section-label">People</p>
+
+      <section class="empty-state" data-people-empty>
+        <div class="empty-state__glyph">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19" />
+            <circle cx="9" cy="8" r="3.25" />
+            <path d="M18 19v-1.5a3.5 3.5 0 0 0-2-3.16" />
+            <path d="M14.5 4.63a3.25 3.25 0 0 1 0 6.24" />
+          </svg>
+        </div>
+        <h2 class="empty-state__title">Start your first journey with Memento</h2>
+        <p class="empty-state__body">
+          Add someone to start remembering the money between you.
+        </p>
+      </section>
+
+      <div class="person-card-list" data-people-list hidden></div>
+
+      <a class="btn btn--primary btn--icon-leading fab" href="pages/add-person.html">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Add Person
+      </a>
+    </main>
+  </div>
+
+  <script src="src/app.js"></script>
+</body>
+</html>

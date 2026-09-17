@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Memento — Person</title>
+  <link rel="stylesheet" href="../src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="icon-button" href="../index.html" aria-label="Back">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </a>
+      <span class="topbar__title">Person</span>
+      <span style="width:40px" aria-hidden="true"></span>
+    </header>
+
+    <main class="main">
+      <div class="person-header">
+        <div class="person-avatar">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6" />
+          </svg>
+        </div>
+        <div class="person-name-placeholder" data-person-name>Person</div>
+      </div>
+
+      <div class="balance-card" data-balance-card>
+        <p class="balance-card__label">Balance</p>
+        <p class="balance-card__value-placeholder" data-balance-value>Nothing to show yet</p>
+      </div>
+
+      <p class="section-label">Transactions</p>
+
+      <!-- Empty state: shown while there are zero transactions -->
+      <section class="empty-state" data-transactions-empty>
+        <div class="empty-state__glyph">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16M4 12h16M4 17h10" />
+          </svg>
+        </div>
+        <h2 class="empty-state__title">No transactions yet</h2>
+        <p class="empty-state__body">
+          Start remembering the money between you.
+        </p>
+      </section>
+
+      <!-- Transaction timeline: populated dynamically, hidden while empty -->
+      <div class="history-list" data-transactions-list hidden></div>
+
+      <button class="btn btn--primary btn--icon-leading fab" type="button" data-open-sheet>
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Add Transaction
+      </button>
+    </main>
+  </div>
+
+  <!-- Bottom sheet overlay + sheet -->
+  <div class="sheet-overlay" data-sheet-overlay hidden></div>
+
+  <div class="sheet" data-sheet hidden aria-hidden="true">
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <form class="sheet__form" data-transaction-form novalidate>
+      <div class="sheet__header">
+        <h2 class="sheet__title">Add transaction</h2>
+        <button type="button" class="icon-button" data-close-sheet aria-label="Close">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="amount">Amount</label>
+        <div class="amount-input">
+          <span class="amount-input__prefix">₹</span>
+          <input
+            class="field__input amount-input__field"
+            id="amount"
+            name="amount"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.01"
+            placeholder="0"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">Who paid?</span>
+        <div class="payer-choice">
+          <label class="payer-option">
+            <input type="radio" name="payer" value="you" required />
+            <span data-payer-label="you">You</span>
+          </label>
+          <label class="payer-option">
+            <input type="radio" name="payer" value="person" required />
+            <span data-payer-label="person">Person</span>
+          </label>
+        </div>
+        <p class="field__hint" data-payer-hint>&nbsp;</p>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="purpose">What's it for?</label>
+        <input
+          class="field__input"
+          id="purpose"
+          name="purpose"
+          type="text"
+          placeholder="e.g. Dinner"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <button class="btn btn--primary" type="submit">Add transaction</button>
+    </form>
+  </div>
+
+  <script src="../src/app.js"></script>
+</body>
+</html>
