@@ -30,7 +30,7 @@
       </button>
     </header>
 
-    <main class="main">
+    <main class="main main--with-actions">
       <div class="person-header">
         <div class="person-avatar">
           <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -64,12 +64,17 @@
       <!-- Transaction timeline: populated dynamically, hidden while empty -->
       <div class="history-list" data-transactions-list hidden></div>
 
-      <button class="btn btn--primary btn--icon-leading fab" type="button" data-open-sheet>
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        Add Transaction
-      </button>
+      <div class="person-actions">
+        <button class="btn btn--primary btn--icon-leading" type="button" data-open-sheet>
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Transaction
+        </button>
+        <button class="btn btn--secondary" type="button" data-open-settle-sheet>
+          Settle
+        </button>
+      </div>
     </main>
   </div>
 
@@ -99,7 +104,7 @@
             name="amount"
             type="number"
             inputmode="decimal"
-            min="0"
+            min="0.01"
             step="0.01"
             placeholder="0"
             required
@@ -255,11 +260,87 @@
     <div class="confirm">
       <h2 class="confirm__title" id="confirm-delete-person-title">Delete this relationship?</h2>
       <p class="confirm__body" id="confirm-delete-person-body">
-        This will permanently remove this person and all transactions associated with this relationship from this device.
+        This will permanently remove this person and all transactions and settlements associated with this relationship from this device.
       </p>
       <div class="confirm__actions">
         <button type="button" class="btn btn--secondary" data-cancel-delete-person>Cancel</button>
         <button type="button" class="btn btn--danger" data-confirm-delete-person>Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settle overlay + sheet -->
+  <div class="sheet-overlay" data-settle-overlay hidden></div>
+
+  <div class="sheet" data-settle-sheet hidden aria-hidden="true">
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <div class="sheet__header">
+      <h2 class="sheet__title" data-settle-title>Settle</h2>
+      <button type="button" class="icon-button" data-close-settle aria-label="Close">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Informative state: nothing for the current user to settle. The
+         top-right × above is the only dismissal control here. -->
+    <div class="settle-info" data-settle-info hidden>
+      <p class="settle-info__body" data-settle-info-primary>&nbsp;</p>
+      <p class="settle-info__body" data-settle-info-secondary hidden>&nbsp;</p>
+    </div>
+
+    <!-- Form state: current user owes the person -->
+    <form class="sheet__form" data-settle-form novalidate>
+      <div class="field">
+        <label class="field__label" for="settle-amount">Amount</label>
+        <div class="amount-input">
+          <span class="amount-input__prefix">₹</span>
+          <input
+            class="field__input amount-input__field"
+            id="settle-amount"
+            name="amount"
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            step="0.01"
+            required
+          />
+        </div>
+        <p class="field__hint" data-settle-direction-text>&nbsp;</p>
+      </div>
+
+      <div class="field">
+        <span class="field__label">How was it settled?</span>
+        <div class="payer-choice" data-settle-method-choice>
+          <label class="payer-option">
+            <input type="radio" name="settle-method" value="cash" required />
+            <span>Cash</span>
+          </label>
+          <label class="payer-option">
+            <input type="radio" name="settle-method" value="online" required />
+            <span>Online</span>
+          </label>
+        </div>
+      </div>
+
+      <p class="field__hint field__hint--error" data-settle-error hidden></p>
+
+      <button class="btn btn--primary" type="submit">Mark as settled</button>
+    </form>
+
+    <!-- Confirmation state: shown after "Mark as settled", before the
+         settlement is actually created. Visually distinct from the form
+         above — no editable inputs, just a summary and two actions. The
+         sheet's existing top-right × (in the header above) remains the
+         only way to dismiss the whole sheet; it creates nothing here. -->
+    <div class="confirm" data-settle-confirm hidden>
+      <p class="confirm__body confirm__body--strong" data-settle-confirm-summary>&nbsp;</p>
+      <p class="confirm__body" data-settle-confirm-method>&nbsp;</p>
+      <div class="confirm__actions">
+        <button type="button" class="btn btn--secondary" data-settle-confirm-cancel>Cancel</button>
+        <button type="button" class="btn btn--primary" data-settle-confirm-submit>Confirm settlement</button>
       </div>
     </div>
   </div>
