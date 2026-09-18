@@ -197,36 +197,110 @@ function setupPersonPage() {
     nameLabel: document.querySelector("[data-person-name]"),
     overlay: document.querySelector("[data-sheet-overlay]"),
     sheet: document.querySelector("[data-sheet]"),
+    sheetTitle: document.querySelector("[data-sheet-title]"),
+    submitLabel: document.querySelector("[data-submit-label]"),
     openBtn: document.querySelector("[data-open-sheet]"),
     closeBtn: document.querySelector("[data-close-sheet]"),
     payerHint: document.querySelector("[data-payer-hint]"),
     payerOptions: Array.from(document.querySelectorAll(".payer-option")),
     payerYouLabel: document.querySelector('[data-payer-label="you"]'),
     payerPersonLabel: document.querySelector('[data-payer-label="person"]'),
+    amountInput: document.getElementById("amount"),
+    purposeInput: document.getElementById("purpose"),
     balanceValue: document.querySelector("[data-balance-value]"),
     balanceCard: document.querySelector("[data-balance-card]"),
     emptyState: document.querySelector("[data-transactions-empty]"),
     list: document.querySelector("[data-transactions-list]"),
+    confirmOverlay: document.querySelector("[data-confirm-overlay]"),
+    confirmSheet: document.querySelector("[data-confirm-sheet]"),
+    cancelDeleteBtn: document.querySelector("[data-cancel-delete]"),
+    confirmDeleteBtn: document.querySelector("[data-confirm-delete]"),
+    menuBtn: document.querySelector("[data-open-menu]"),
+    menuOverlay: document.querySelector("[data-menu-overlay]"),
+    menuSheet: document.querySelector("[data-menu-sheet]"),
+    menuEditPersonBtn: document.querySelector("[data-menu-edit-person]"),
+    menuDeletePersonBtn: document.querySelector("[data-menu-delete-person]"),
+    menuCancelBtn: document.querySelector("[data-menu-cancel]"),
+    editPersonOverlay: document.querySelector("[data-edit-person-overlay]"),
+    editPersonSheet: document.querySelector("[data-edit-person-sheet]"),
+    editPersonForm: document.querySelector("[data-edit-person-form]"),
+    closeEditPersonBtn: document.querySelector("[data-close-edit-person]"),
+    editPersonNameInput: document.getElementById("edit-person-name"),
+    editPersonPhoneInput: document.getElementById("edit-person-phone"),
+    deletePersonOverlay: document.querySelector("[data-delete-person-overlay]"),
+    deletePersonSheet: document.querySelector("[data-delete-person-sheet]"),
+    cancelDeletePersonBtn: document.querySelector("[data-cancel-delete-person]"),
+    confirmDeletePersonBtn: document.querySelector("[data-confirm-delete-person]"),
   };
 
   if (!person) {
-    // No valid person selected (e.g. page opened directly). Keep the
-    // generic structural placeholder and don't allow creating orphaned
-    // transactions with nothing to attach them to.
+    // No valid person selected (e.g. page opened directly, or a stale link
+    // to a person who has since been deleted). Keep the generic structural
+    // placeholder and don't allow creating orphaned transactions or
+    // editing/deleting a relationship that no longer exists.
     if (els.nameLabel) els.nameLabel.textContent = "Person";
     els.openBtn.disabled = true;
+    if (els.menuBtn) els.menuBtn.disabled = true;
     return;
   }
 
   if (els.nameLabel) els.nameLabel.textContent = person.name;
   if (els.payerPersonLabel) els.payerPersonLabel.textContent = person.name;
 
-  els.openBtn.addEventListener("click", openSheet);
+  // Tracks which transaction is being edited. `null` means the sheet is in
+  // "add a new transaction" mode. Editing never changes a transaction's
+  // `id` or `personId` — only its amount/payer/purpose (and `updatedAt`).
+  let editingTransactionId = null;
+
+  // Tracks which transaction is pending deletion while the confirmation
+  // sheet is open. `null` means no deletion is in progress.
+  let pendingDeleteId = null;
+
+  els.openBtn.addEventListener("click", openAddSheet);
   els.closeBtn.addEventListener("click", closeSheet);
   els.overlay.addEventListener("click", closeSheet);
 
+  // Event delegation: transaction items are re-rendered on every change,
+  // so we listen on the container rather than on individual buttons.
+  els.list.addEventListener("click", (event) => {
+    const editButton = event.target.closest("[data-edit-tx]");
+    if (editButton) {
+      openEditSheet(editButton.getAttribute("data-edit-tx"));
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete-tx]");
+    if (deleteButton) {
+      openDeleteConfirm(deleteButton.getAttribute("data-delete-tx"));
+    }
+  });
+
+  els.cancelDeleteBtn.addEventListener("click", closeDeleteConfirm);
+  els.confirmOverlay.addEventListener("click", closeDeleteConfirm);
+  els.confirmDeleteBtn.addEventListener("click", performDelete);
+
+  els.menuBtn.addEventListener("click", openMenuSheet);
+  els.menuOverlay.addEventListener("click", closeMenuSheet);
+  els.menuCancelBtn.addEventListener("click", closeMenuSheet);
+  els.menuEditPersonBtn.addEventListener("click", () => {
+    closeMenuSheet();
+    openEditPersonSheet();
+  });
+  els.menuDeletePersonBtn.addEventListener("click", () => {
+    closeMenuSheet();
+    openDeletePersonConfirm();
+  });
+
+  els.closeEditPersonBtn.addEventListener("click", closeEditPersonSheet);
+  els.editPersonOverlay.addEventListener("click", closeEditPersonSheet);
+  els.editPersonForm.addEventListener("submit", handleEditPersonSubmit);
+
+  els.cancelDeletePersonBtn.addEventListener("click", closeDeletePersonConfirm);
+  els.deletePersonOverlay.addEventListener("click", closeDeletePersonConfirm);
+  els.confirmDeletePersonBtn.addEventListener("click", performDeletePerson);
+
   form.querySelectorAll('input[name="payer"]').forEach((input) => {
-    input.addEventListener("change", updatePayerHint);
+    input.addEventListener("change", (event) => syncPayerUI(event.target.value));
   });
 
   form.addEventListener("submit", handleSubmit);
@@ -236,6 +310,41 @@ function setupPersonPage() {
 
   // -- Sheet open/close ---------------------------------------------------
 
+  function openAddSheet() {
+    editingTransactionId = null;
+    resetForm();
+    els.sheetTitle.textContent = "Add transaction";
+    els.submitLabel.textContent = "Add transaction";
+    openSheet();
+  }
+
+  function openEditSheet(transactionId) {
+    // Look the transaction up fresh from storage and confirm it still
+    // belongs to this person — fails safely (does nothing) otherwise,
+    // rather than opening a sheet with no real transaction behind it.
+    const transaction = loadTransactions().find(
+      (tx) => tx.id === transactionId && tx.personId === person.id
+    );
+    if (!transaction) return;
+
+    editingTransactionId = transaction.id;
+
+    els.amountInput.value = transaction.amount;
+    els.purposeInput.value = transaction.purpose;
+
+    const payerInput = form.querySelector(
+      `input[name="payer"][value="${transaction.payer}"]`
+    );
+    if (payerInput) {
+      payerInput.checked = true;
+      syncPayerUI(transaction.payer);
+    }
+
+    els.sheetTitle.textContent = "Edit transaction";
+    els.submitLabel.textContent = "Save changes";
+    openSheet();
+  }
+
   function openSheet() {
     els.overlay.hidden = false;
     els.sheet.hidden = false;
@@ -243,7 +352,7 @@ function setupPersonPage() {
     els.overlay.classList.add("is-visible");
     els.sheet.classList.add("is-open");
     els.sheet.setAttribute("aria-hidden", "false");
-    document.getElementById("amount")?.focus();
+    els.amountInput?.focus();
   }
 
   function closeSheet() {
@@ -258,14 +367,235 @@ function setupPersonPage() {
     };
     els.sheet.addEventListener("transitionend", onTransitionEnd);
 
+    // Cancelling (closing without submitting) must never modify data —
+    // this only resets the form/UI, it never touches storage.
+    editingTransactionId = null;
     resetForm();
+  }
+
+  // -- Delete confirmation -----------------------------------------------
+
+  function openDeleteConfirm(transactionId) {
+    // Look the transaction up fresh from storage and confirm it still
+    // belongs to this person — fails safely (does nothing) otherwise, e.g.
+    // if the row is stale or the id is malformed.
+    const transaction = loadTransactions().find(
+      (tx) => tx.id === transactionId && tx.personId === person.id
+    );
+    if (!transaction) return;
+
+    pendingDeleteId = transaction.id;
+
+    els.confirmOverlay.hidden = false;
+    els.confirmSheet.hidden = false;
+    void els.confirmSheet.offsetHeight; // Force reflow so the transition animates.
+    els.confirmOverlay.classList.add("is-visible");
+    els.confirmSheet.classList.add("is-open");
+    els.confirmSheet.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeleteConfirm() {
+    els.confirmOverlay.classList.remove("is-visible");
+    els.confirmSheet.classList.remove("is-open");
+    els.confirmSheet.setAttribute("aria-hidden", "true");
+
+    const onTransitionEnd = () => {
+      els.confirmOverlay.hidden = true;
+      els.confirmSheet.hidden = true;
+      els.confirmSheet.removeEventListener("transitionend", onTransitionEnd);
+    };
+    els.confirmSheet.addEventListener("transitionend", onTransitionEnd);
+
+    // Cancelling (or closing via the overlay) must never modify data —
+    // this only resets the pending state, it never touches storage.
+    pendingDeleteId = null;
+  }
+
+  function performDelete() {
+    if (!pendingDeleteId) {
+      closeDeleteConfirm();
+      return;
+    }
+
+    const transactions = loadTransactions();
+    const index = transactions.findIndex(
+      (tx) => tx.id === pendingDeleteId && tx.personId === person.id
+    );
+
+    if (index === -1) {
+      // Already deleted, a nonexistent id, or (defensively) a transaction
+      // belonging to another person — do nothing destructive, just close.
+      closeDeleteConfirm();
+      return;
+    }
+
+    // Remove only this transaction. No other transaction, person, or
+    // localStorage key is touched. The balance is never stored directly —
+    // it's recalculated from whatever transactions remain.
+    transactions.splice(index, 1);
+    saveTransactions(transactions);
+
+    renderTransactions();
+    renderBalance();
+    closeDeleteConfirm();
+  }
+
+  // -- Person options menu -------------------------------------------------
+
+  function openMenuSheet() {
+    els.menuOverlay.hidden = false;
+    els.menuSheet.hidden = false;
+    void els.menuSheet.offsetHeight; // Force reflow so the transition animates.
+    els.menuOverlay.classList.add("is-visible");
+    els.menuSheet.classList.add("is-open");
+    els.menuSheet.setAttribute("aria-hidden", "false");
+  }
+
+  function closeMenuSheet() {
+    els.menuOverlay.classList.remove("is-visible");
+    els.menuSheet.classList.remove("is-open");
+    els.menuSheet.setAttribute("aria-hidden", "true");
+
+    const onTransitionEnd = () => {
+      els.menuOverlay.hidden = true;
+      els.menuSheet.hidden = true;
+      els.menuSheet.removeEventListener("transitionend", onTransitionEnd);
+    };
+    els.menuSheet.addEventListener("transitionend", onTransitionEnd);
+  }
+
+  // -- Edit person -----------------------------------------------------------
+
+  function openEditPersonSheet() {
+    // Always pull the latest values into the form when opening, so the
+    // sheet reflects the current name/phone rather than stale defaults.
+    els.editPersonNameInput.value = person.name;
+    els.editPersonPhoneInput.value = person.phone;
+
+    els.editPersonOverlay.hidden = false;
+    els.editPersonSheet.hidden = false;
+    void els.editPersonSheet.offsetHeight; // Force reflow so the transition animates.
+    els.editPersonOverlay.classList.add("is-visible");
+    els.editPersonSheet.classList.add("is-open");
+    els.editPersonSheet.setAttribute("aria-hidden", "false");
+    els.editPersonNameInput.focus();
+  }
+
+  function closeEditPersonSheet() {
+    els.editPersonOverlay.classList.remove("is-visible");
+    els.editPersonSheet.classList.remove("is-open");
+    els.editPersonSheet.setAttribute("aria-hidden", "true");
+
+    const onTransitionEnd = () => {
+      els.editPersonOverlay.hidden = true;
+      els.editPersonSheet.hidden = true;
+      els.editPersonSheet.removeEventListener("transitionend", onTransitionEnd);
+    };
+    els.editPersonSheet.addEventListener("transitionend", onTransitionEnd);
+
+    // Cancelling (or closing via the overlay/close button) must never
+    // modify data — this only resets the form's own fields, which get
+    // repopulated from `person` the next time the sheet opens.
+    els.editPersonForm.reset();
+  }
+
+  function handleEditPersonSubmit(event) {
+    event.preventDefault();
+
+    // Reuse the same validation rule as Add Person: trim both fields,
+    // require both to be non-empty. No stricter phone format is enforced
+    // there, so none is introduced here either.
+    const name = els.editPersonNameInput.value.trim();
+    const phone = els.editPersonPhoneInput.value.trim();
+
+    const isValid = name.length > 0 && phone.length > 0;
+    if (!isValid) {
+      if (els.editPersonForm.reportValidity) els.editPersonForm.reportValidity();
+      return;
+    }
+
+    const people = loadPeople();
+    const index = people.findIndex((p) => p.id === person.id);
+
+    if (index === -1) {
+      // The person disappeared from storage between opening the sheet and
+      // saving (e.g. deleted in another tab). Fail safely: don't write
+      // anything or recreate a person, just close the sheet.
+      closeEditPersonSheet();
+      return;
+    }
+
+    // Only the editable fields change — id and createdAt are preserved,
+    // and no transaction is touched.
+    people[index] = {
+      ...people[index],
+      name,
+      phone,
+    };
+    savePeople(people);
+
+    // Keep the in-memory `person` object used throughout this page's
+    // closures in sync, so the name label, transaction wording, and payer
+    // radio label all reflect the change immediately without a reload.
+    person.name = name;
+    person.phone = phone;
+
+    if (els.nameLabel) els.nameLabel.textContent = person.name;
+    if (els.payerPersonLabel) els.payerPersonLabel.textContent = person.name;
+
+    renderTransactions();
+    closeEditPersonSheet();
+  }
+
+  // -- Delete person / relationship ------------------------------------------
+
+  function openDeletePersonConfirm() {
+    els.deletePersonOverlay.hidden = false;
+    els.deletePersonSheet.hidden = false;
+    void els.deletePersonSheet.offsetHeight; // Force reflow so the transition animates.
+    els.deletePersonOverlay.classList.add("is-visible");
+    els.deletePersonSheet.classList.add("is-open");
+    els.deletePersonSheet.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDeletePersonConfirm() {
+    els.deletePersonOverlay.classList.remove("is-visible");
+    els.deletePersonSheet.classList.remove("is-open");
+    els.deletePersonSheet.setAttribute("aria-hidden", "true");
+
+    const onTransitionEnd = () => {
+      els.deletePersonOverlay.hidden = true;
+      els.deletePersonSheet.hidden = true;
+      els.deletePersonSheet.removeEventListener("transitionend", onTransitionEnd);
+    };
+    els.deletePersonSheet.addEventListener("transitionend", onTransitionEnd);
+  }
+
+  function performDeletePerson() {
+    const people = loadPeople();
+    const index = people.findIndex((p) => p.id === person.id);
+
+    if (index !== -1) {
+      // Remove only this person...
+      people.splice(index, 1);
+      savePeople(people);
+
+      // ...and only this person's transactions. Every other person's
+      // transactions are left completely untouched.
+      const transactions = loadTransactions();
+      const remaining = transactions.filter((tx) => tx.personId !== person.id);
+      saveTransactions(remaining);
+    }
+
+    // Whether or not the person was already gone (e.g. deleted in another
+    // tab), this relationship no longer exists locally — navigate back to
+    // Home rather than leaving a stale Person page on screen.
+    window.location.href = "../index.html";
   }
 
   // -- Payer hint -----------------------------------------------------------
 
-  function updatePayerHint(event) {
-    const value = event.target.value;
-
+  function syncPayerUI(value) {
     els.payerOptions.forEach((option) => {
       const input = option.querySelector("input");
       option.classList.toggle("is-selected", input.checked);
@@ -277,36 +607,62 @@ function setupPersonPage() {
         : `${person.name} paid for you`;
   }
 
-  // -- Submit / create transaction ------------------------------------------
+  // -- Submit / create or update transaction --------------------------------
 
   function handleSubmit(event) {
     event.preventDefault();
 
-    const amountInput = document.getElementById("amount");
-    const purposeInput = document.getElementById("purpose");
+    const amount = parseFloat(els.amountInput.value);
+    const purpose = els.purposeInput.value.trim();
     const payerInput = form.querySelector('input[name="payer"]:checked');
-
-    const amount = parseFloat(amountInput.value);
-    const purpose = purposeInput.value.trim();
     const payer = payerInput ? payerInput.value : null;
 
-    if (!amount || amount <= 0 || !payer || !purpose) {
+    const isValid =
+      Number.isFinite(amount) && amount > 0 && !!payer && purpose.length > 0;
+
+    if (!isValid) {
       form.reportValidity();
       return;
     }
 
-    const transaction = {
-      id: generateId(),
-      personId: person.id,
-      amount,
-      payer, // "you" | "person"
-      beneficiary: payer === "you" ? "person" : "you",
-      purpose,
-      timestamp: new Date().toISOString(),
-    };
-
     const transactions = loadTransactions();
-    transactions.push(transaction);
+
+    if (editingTransactionId) {
+      // Update the existing transaction in place. Its id, personId and
+      // original timestamp are preserved; only the edited fields change.
+      const index = transactions.findIndex(
+        (tx) => tx.id === editingTransactionId && tx.personId === person.id
+      );
+
+      if (index === -1) {
+        // The transaction disappeared from storage between opening the
+        // sheet and saving (e.g. edited in another tab). Fail safely:
+        // don't write anything, just close the sheet.
+        closeSheet();
+        return;
+      }
+
+      const existing = transactions[index];
+      transactions[index] = {
+        ...existing,
+        amount,
+        payer,
+        beneficiary: payer === "you" ? "person" : "you",
+        purpose,
+        updatedAt: new Date().toISOString(),
+      };
+    } else {
+      transactions.push({
+        id: generateId(),
+        personId: person.id,
+        amount,
+        payer, // "you" | "person"
+        beneficiary: payer === "you" ? "person" : "you",
+        purpose,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     saveTransactions(transactions);
 
     renderTransactions();
@@ -344,7 +700,7 @@ function setupPersonPage() {
       .map((tx) => {
         const payerLabel = tx.payer === "you" ? "You paid" : `${person.name} paid`;
         return `
-          <div class="transaction-item">
+          <div class="transaction-item" data-tx-id="${tx.id}">
             <div class="transaction-item__main">
               <span class="transaction-item__payer">${escapeHtml(payerLabel)}</span>
               <span class="transaction-item__purpose">${escapeHtml(tx.purpose)}</span>
@@ -352,6 +708,32 @@ function setupPersonPage() {
             <div class="transaction-item__meta">
               <span class="transaction-item__amount">₹${formatAmount(tx.amount)}</span>
               <span class="transaction-item__time">${formatRelativeTime(new Date(tx.timestamp))}</span>
+            </div>
+            <div class="transaction-item__actions">
+              <button
+                type="button"
+                class="transaction-item__edit"
+                data-edit-tx="${tx.id}"
+                aria-label="Edit transaction"
+              >
+                <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="transaction-item__delete"
+                data-delete-tx="${tx.id}"
+                aria-label="Delete transaction"
+              >
+                <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 7h16" />
+                  <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                  <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+                  <path d="M10 11v6M14 11v6" />
+                </svg>
+              </button>
             </div>
           </div>
         `;

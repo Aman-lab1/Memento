@@ -15,7 +15,19 @@
         </svg>
       </a>
       <span class="topbar__title">Person</span>
-      <span style="width:40px" aria-hidden="true"></span>
+      <button
+        type="button"
+        class="icon-button icon-button--menu"
+        data-open-menu
+        aria-label="Person options"
+        aria-haspopup="true"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="19" cy="12" r="1.8" />
+        </svg>
+      </button>
     </header>
 
     <main class="main">
@@ -69,7 +81,7 @@
 
     <form class="sheet__form" data-transaction-form novalidate>
       <div class="sheet__header">
-        <h2 class="sheet__title">Add transaction</h2>
+        <h2 class="sheet__title" data-sheet-title>Add transaction</h2>
         <button type="button" class="icon-button" data-close-sheet aria-label="Close">
           <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 6l12 12M18 6L6 18" />
@@ -123,8 +135,133 @@
         />
       </div>
 
-      <button class="btn btn--primary" type="submit">Add transaction</button>
+      <button class="btn btn--primary" type="submit" data-submit-label>Add transaction</button>
     </form>
+  </div>
+
+  <!-- Delete confirmation overlay + sheet -->
+  <div class="sheet-overlay" data-confirm-overlay hidden></div>
+
+  <div
+    class="sheet sheet--confirm"
+    data-confirm-sheet
+    hidden
+    aria-hidden="true"
+    role="alertdialog"
+    aria-labelledby="confirm-delete-title"
+    aria-describedby="confirm-delete-body"
+  >
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <div class="confirm">
+      <h2 class="confirm__title" id="confirm-delete-title">Delete this transaction?</h2>
+      <p class="confirm__body" id="confirm-delete-body">
+        This will permanently remove this transaction from the history and update the balance.
+      </p>
+      <div class="confirm__actions">
+        <button type="button" class="btn btn--secondary" data-cancel-delete>Cancel</button>
+        <button type="button" class="btn btn--danger" data-confirm-delete>Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Person options menu (Edit person / Delete relationship) -->
+  <div class="sheet-overlay" data-menu-overlay hidden></div>
+
+  <div class="sheet sheet--menu" data-menu-sheet hidden aria-hidden="true">
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <div class="action-menu">
+      <button type="button" class="action-menu__item" data-menu-edit-person>
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+        </svg>
+        Edit person
+      </button>
+      <button type="button" class="action-menu__item action-menu__item--danger" data-menu-delete-person>
+        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 7h16" />
+          <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+          <path d="M10 11v6M14 11v6" />
+        </svg>
+        Delete relationship
+      </button>
+      <button type="button" class="action-menu__item action-menu__cancel" data-menu-cancel>
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Edit person overlay + sheet -->
+  <div class="sheet-overlay" data-edit-person-overlay hidden></div>
+
+  <div class="sheet" data-edit-person-sheet hidden aria-hidden="true">
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <form class="sheet__form" data-edit-person-form novalidate>
+      <div class="sheet__header">
+        <h2 class="sheet__title">Edit person</h2>
+        <button type="button" class="icon-button" data-close-edit-person aria-label="Close">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-person-name">Name</label>
+        <input
+          class="field__input"
+          id="edit-person-name"
+          name="name"
+          type="text"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="edit-person-phone">Phone number</label>
+        <input
+          class="field__input"
+          id="edit-person-phone"
+          name="phone"
+          type="tel"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <button class="btn btn--primary" type="submit">Save changes</button>
+    </form>
+  </div>
+
+  <!-- Delete relationship confirmation overlay + sheet -->
+  <div class="sheet-overlay" data-delete-person-overlay hidden></div>
+
+  <div
+    class="sheet sheet--confirm"
+    data-delete-person-sheet
+    hidden
+    aria-hidden="true"
+    role="alertdialog"
+    aria-labelledby="confirm-delete-person-title"
+    aria-describedby="confirm-delete-person-body"
+  >
+    <div class="sheet__handle" aria-hidden="true"></div>
+
+    <div class="confirm">
+      <h2 class="confirm__title" id="confirm-delete-person-title">Delete this relationship?</h2>
+      <p class="confirm__body" id="confirm-delete-person-body">
+        This will permanently remove this person and all transactions associated with this relationship from this device.
+      </p>
+      <div class="confirm__actions">
+        <button type="button" class="btn btn--secondary" data-cancel-delete-person>Cancel</button>
+        <button type="button" class="btn btn--danger" data-confirm-delete-person>Delete</button>
+      </div>
+    </div>
   </div>
 
   <script src="../src/app.js"></script>

@@ -17,6 +17,10 @@
   --accent: #f5f5f4;
   --accent-contrast: #0a0a0a;
 
+  --danger: #ff453a;
+  --danger-contrast: #ffffff;
+  --danger-wash: rgba(255, 69, 58, 0.12);
+
   --radius-lg: 28px;
   --radius-md: 20px;
   --radius-sm: 14px;
@@ -40,6 +44,34 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   Text selection
+   Disabled globally for a native, app-like feel on mobile (prevents the
+   browser's selection/copy/"search for" bubble from appearing on normal
+   UI text). Re-enabled explicitly wherever the user actually needs to
+   select or edit text. Uses the universal selector (lowest possible
+   specificity) so the exceptions below reliably win without needing
+   !important anywhere.
+   -------------------------------------------------------------------------- */
+
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 html,
@@ -125,6 +157,13 @@ button {
   height: 20px;
   stroke: currentColor;
   fill: none;
+}
+
+.icon-button--menu svg {
+  stroke: none;
+  fill: currentColor;
+  width: 18px;
+  height: 18px;
 }
 
 .main {
@@ -267,6 +306,15 @@ button {
   background: transparent;
   color: var(--text-secondary);
   border-color: var(--border);
+}
+
+.btn--danger {
+  background: var(--danger);
+  color: var(--danger-contrast);
+}
+
+.btn--danger:active {
+  opacity: 0.85;
 }
 
 .btn[disabled] {
@@ -475,7 +523,6 @@ button {
 .transaction-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-md);
@@ -485,6 +532,7 @@ button {
 }
 
 .transaction-item__main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -523,6 +571,51 @@ button {
 .transaction-item__time {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.transaction-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.transaction-item__edit,
+.transaction-item__delete {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.transaction-item__edit:active {
+  transform: scale(0.92);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.transaction-item__delete:active {
+  transform: scale(0.92);
+  background: var(--danger-wash);
+  color: var(--danger);
+}
+
+.transaction-item__edit svg,
+.transaction-item__delete svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
 }
 
 @keyframes transaction-enter {
@@ -614,6 +707,88 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+.confirm__title {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.confirm__body {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.confirm__actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.confirm__actions .btn {
+  width: auto;
+  flex: 1;
+}
+
+.action-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+}
+
+.action-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+  -webkit-appearance: none;
+}
+
+.action-menu__item:active {
+  background: var(--surface-raised);
+}
+
+.action-menu__item svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.action-menu__item--danger {
+  color: var(--danger);
+}
+
+.action-menu__cancel {
+  justify-content: center;
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding-top: var(--space-4);
 }
 
 .amount-input {
