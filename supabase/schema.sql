@@ -40,6 +40,37 @@ create table if not exists public.profiles (
   constraint profiles_display_name_not_blank check (btrim(display_name) <> '')
 );
 
+-- public.profiles may already exist from an earlier development phase, in
+-- which case CREATE TABLE IF NOT EXISTS above does nothing. Reconcile the
+-- columns additively so the result is identical either way. Existing rows
+-- are backfilled with now(); nothing is dropped or rewritten.
+alter table public.profiles
+  add column if not exists created_at timestamptz not null default now();
+alter table public.profiles
+  add column if not exists updated_at timestamptz not null default now();
+
+-- Same for the display_name check on a pre-existing table. NOT VALID means
+-- existing rows can never block this script, while new/updated rows are
+-- still checked.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conrelid = 'public.profiles'::regclass
+       and conname = 'profiles_display_name_not_blank'
+  ) then
+    alter table public.profiles
+      add constraint profiles_display_name_not_blank
+      check (btrim(display_name) <> '') not valid;
+  end if;
+end;
+$$;
+
+-- NOTE: this script deliberately does NOT drop RLS policies. Leftover
+-- policies from the earlier auth experiment are removed by a one-time
+-- manual cleanup (see the 6B fix notes), never by schema.sql -- otherwise
+-- re-running schema.sql after 6C would wipe the 6C policies.
+
 
 -- ---------------------------------------------------------------------
 -- 2. relationships
