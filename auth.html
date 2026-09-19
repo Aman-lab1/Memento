@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Memento — Sign in</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <span class="topbar__title">Memento</span>
+      <span style="width:40px" aria-hidden="true"></span>
+    </header>
+
+    <main class="main">
+      <div class="greeting">
+        <p class="greeting__eyebrow">Welcome</p>
+        <h1 class="greeting__title" data-auth-title>Log in to Memento</h1>
+      </div>
+
+      <p class="field__hint field__hint--error" data-auth-error hidden></p>
+      <p class="field__hint" data-auth-info hidden></p>
+
+      <form class="form" data-login-form novalidate>
+        <div class="field">
+          <label class="field__label" for="login-email">Email</label>
+          <input
+            class="field__input"
+            id="login-email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="login-password">Password</label>
+          <input
+            class="field__input"
+            id="login-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <button class="btn btn--primary" type="submit">Log in</button>
+        <button class="btn btn--ghost" type="button" data-show-signup>
+          New to Memento? Create an account
+        </button>
+      </form>
+
+      <form class="form" data-signup-form novalidate hidden>
+        <div class="field">
+          <label class="field__label" for="signup-name">Display name</label>
+          <input
+            class="field__input"
+            id="signup-name"
+            name="name"
+            type="text"
+            placeholder="What should we call you?"
+            autocomplete="name"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="signup-email">Email</label>
+          <input
+            class="field__input"
+            id="signup-email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="signup-password">Password</label>
+          <input
+            class="field__input"
+            id="signup-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+          />
+          <span class="field__hint">At least 6 characters.</span>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="signup-confirm-password">Confirm password</label>
+          <input
+            class="field__input"
+            id="signup-confirm-password"
+            name="confirmPassword"
+            type="password"
+            autocomplete="new-password"
+            required
+          />
+        </div>
+
+        <button class="btn btn--primary" type="submit">Create account</button>
+        <button class="btn btn--ghost" type="button" data-show-login>
+          Already have an account? Log in
+        </button>
+      </form>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="src/supabase.js"></script>
+  <script src="src/data.js"></script>
+  <script src="src/auth.js"></script>
+</body>
+</html>

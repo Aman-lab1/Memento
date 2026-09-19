@@ -113,6 +113,39 @@ const MementoData = (function initMementoData() {
     }
   }
 
+  // Creates the profile row for whoever is currently signed in. Only ever
+  // inserts { id: auth.uid(), display_name }, matching the profiles_insert_own
+  // policy (id = auth.uid()) exactly — there is no path here for creating a
+  // profile on anyone else's behalf, and none is needed: RLS would reject it
+  // anyway. Callers (src/auth.js) are expected to check getCurrentProfile()
+  // first so this never runs against an id that already has a row; this
+  // function itself does not duplicate-check, since profiles.id is a primary
+  // key referencing auth.users(id) and a second insert simply fails.
+  async function createProfile({ displayName } = {}) {
+    const supa = client();
+    if (!supa) return unavailable();
+
+    const name = (displayName || "").trim();
+    if (!name) {
+      return { ok: false, error: "invalid-argument", message: "displayName is required." };
+    }
+
+    const userResult = await getCurrentUser();
+    if (!userResult.ok) return notAuthenticated("createProfile");
+
+    try {
+      const { data, error } = await supa
+        .from("profiles")
+        .insert({ id: userResult.data.id, display_name: name })
+        .select("id, display_name, created_at, updated_at")
+        .single();
+      if (error) return fromSupabaseError(error);
+      return { ok: true, data };
+    } catch (error) {
+      return fromSupabaseError(error);
+    }
+  }
+
   // ----------------------------------------------------------------
   // Relationships (Memento's "people": one relationship row IS the
   // relationship-centered equivalent of a "person" in the current
@@ -429,6 +462,7 @@ const MementoData = (function initMementoData() {
   return {
     getCurrentUser,
     getCurrentProfile,
+    createProfile,
     listRelationships,
     getRelationship,
     createRelationship,
