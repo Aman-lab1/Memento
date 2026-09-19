@@ -1,4 +1,4 @@
-const CACHE_NAME = "memento-v1.7.2,1";
+const CACHE_NAME = "memento-v1.7.2.1";
 
 const APP_SHELL_PATHS = [
   "./",
