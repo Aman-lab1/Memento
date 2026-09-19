@@ -1,22 +1,25 @@
-const CACHE_NAME = "memento-v1";
+const CACHE_NAME = "memento-v2";
 
-const APP_SHELL = [
-  "/",
-  "/index.html",
-  "/pages/person.html",
-  "/pages/history.html",
-  "/pages/add-person.html",
-  "/src/app.js",
-  "/src/style.css",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
+const APP_SHELL_PATHS = [
+  "./",
+  "./index.html",
+  "./pages/person.html",
+  "./pages/history.html",
+  "./pages/add-person.html",
+  "./src/app.js",
+  "./src/style.css",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
+      const shellUrls = APP_SHELL_PATHS.map(
+        (path) => new URL(path, self.registration.scope).toString()
+      );
+      return cache.addAll(shellUrls);
     })
   );
 
@@ -25,13 +28,13 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys().then((keys) =>
+      Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
-      );
-    }).then(() => self.clients.claim())
+      )
+    ).then(() => self.clients.claim())
   );
 });
 

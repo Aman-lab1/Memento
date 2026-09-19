@@ -15,6 +15,25 @@ const STORAGE_KEYS = {
 // of truth so validation and (later) UI can both reference it.
 const SETTLEMENT_METHODS = ["cash", "online"];
 
+// Register the service worker on every page. GitHub Pages hosts this app
+// under /Memento/ while local development uses /. The base is detected
+// automatically so both environments work without changing product logic.
+registerServiceWorker();
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  const appBase =
+    window.location.hostname.endsWith(".github.io") && segments.length > 0
+      ? `/${segments[0]}/`
+      : "/";
+
+  navigator.serviceWorker.register(`${appBase}sw.js`).catch((error) => {
+    console.warn("Memento service worker registration failed:", error);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupAddPersonForm();
   setupHomePage();
